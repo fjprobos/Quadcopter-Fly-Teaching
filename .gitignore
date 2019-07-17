@@ -1,0 +1,6 @@
+.idea
+.pyc
+*.pyc
+.xml
+*.xml
+.ipynb_checkpoints
