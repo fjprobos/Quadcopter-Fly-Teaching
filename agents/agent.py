@@ -185,8 +185,10 @@ class DDPG():
         self.action_high = task.action_high
 
         # Score tracker and learning parameters
-        self.best_w = None
-        self.best_reward = -np.inf
+        self.best_Q = -10000000000
+        self.best_reward = -10000000000
+        self.rewards_list = None
+        self.current_reward = None
 
         # Actor (Policy) Model
         self.actor_local = Actor(self.state_size, self.action_size, self.action_low, self.action_high)
@@ -208,7 +210,7 @@ class DDPG():
 
         # Replay memory
         self.buffer_size = 100000
-        self.batch_size = 64
+        self.batch_size = 8
         self.memory = ReplayBuffer(self.buffer_size, self.batch_size)
 
         # Algorithm parameters
@@ -226,7 +228,8 @@ class DDPG():
         self.memory.add(self.last_state, action, reward, next_state, done)
 
         # Learn, if enough samples are available in memory
-        if len(self.memory) > self.batch_size:
+        memory_length = len(self.memory)
+        if memory_length > self.batch_size:
             experiences = self.memory.sample()
             self.learn(experiences)
 
@@ -264,6 +267,13 @@ class DDPG():
         # Soft-update target models
         self.soft_update(self.critic_local.model, self.critic_target.model)
         self.soft_update(self.actor_local.model, self.actor_target.model)
+
+        # We add a q target and reward tracker
+        self.rewards_list = [i[0] for i in rewards.tolist()]
+        self.current_reward = max(self.rewards_list)
+        if self.best_reward < self.current_reward:
+            self.best_reward = self.current_reward
+            self.best_Q = Q_targets.max
 
     def soft_update(self, local_model, target_model):
         """Soft update model parameters."""
